@@ -1,0 +1,6 @@
+vision_memory.json
+vision_chats/
+*.jpg
+*.png
+__pycache__/
+.env
