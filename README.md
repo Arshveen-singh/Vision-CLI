@@ -25,8 +25,7 @@ One file. Zero bloat. Runs instantly.
 
 ## ✦ What is Vision CLI?
 
-Vision CLI is a one-file AI agent for your terminal. It combines real-time web search, Indian stock market data, a personal advisor, persistent memory, image generation, voice control, and a full code assistant — all wrapped in a stunning Rich console with teal war-room aesthetics.
-
+Vision CLI is a one-file AI agent for your terminal. It combines real-time web search, Indian stock market data, a personal advisor, persistent memory, image generation, voice control, and a full code assistant.
 ---
 
 ## ⚡ Quick Start
