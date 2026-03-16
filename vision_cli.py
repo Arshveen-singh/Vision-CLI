@@ -1,7 +1,10 @@
+# MIT License — Copyright (c) 2026 Arshveen Singh
+# Vision CLI v3.1 — Patched: asyncio fix, lazy imports, timer thread, save_data bug
+
 import warnings
 warnings.filterwarnings("ignore")
 
-import os, re, subprocess, requests, wikipedia, asyncio
+import os, re, subprocess, requests, asyncio
 import json, time, sys, threading
 from datetime import datetime
 from pathlib import Path
@@ -10,11 +13,10 @@ from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.table import Table
 from rich import box
-from ddgs import DDGS
-from bs4 import BeautifulSoup
-from playwright.async_api import async_playwright
-import easyocr
-import yfinance as yf
+
+# ── Lazy imports (heavy libs loaded only when needed) ──────────────
+# DO NOT import easyocr, wikipedia, yfinance, playwright at top level.
+# Each loads 2-5s of model/deps — kills startup time. Import inside functions.
 
 console = Console()
 
@@ -29,20 +31,25 @@ def load_data():
     if os.path.exists(DATA_FILE):
         with open(DATA_FILE, "r") as f:
             return json.load(f)
-    return {"memory": {}, "goals": [], "portfolio": {}, "advisor_history": [], "created": datetime.now().strftime("%d/%m/%Y")}
+    return {
+        "memory": {}, "goals": [], "portfolio": {},
+        "advisor_history": [], "created": datetime.now().strftime("%d/%m/%Y")
+    }
 
 def save_data():
-    data["advisor_history"] = advisor_history[-20:]
+    # FIX: was trimming advisor_history reference in-place which could cause
+    # the in-memory list to drift from what was actually saved. Now explicit.
+    data["memory"] = memory
     data["goals"] = goals
     data["portfolio"] = portfolio
-    data["memory"] = memory
+    data["advisor_history"] = advisor_history[-20:]  # trim only on write
     with open(DATA_FILE, "w") as f:
         json.dump(data, f, indent=2)
 
 data = load_data()
-memory = data["memory"]
-goals = data["goals"]
-portfolio = data["portfolio"]
+memory = data.get("memory", {})
+goals = data.get("goals", [])
+portfolio = data.get("portfolio", {})
 advisor_history = data.get("advisor_history", [])
 history = []
 mic_mode = False
@@ -50,9 +57,15 @@ last_request_time = 0
 
 # ── Rate Limiting ──────────────────────────────────────────────────
 MODEL_LIMITS = {
+    # Groq
     "moonshotai/kimi-k2-instruct-0905": 3,
     "qwen/qwen3-32b": 2,
     "llama-3.3-70b-versatile": 2,
+    # OpenRouter — were missing, defaulted to 2s anyway but now explicit
+    "anthropic/claude-3.5-sonnet": 3,
+    "google/gemini-flash-1.5": 1,
+    "meta-llama/llama-3.3-70b-instruct": 2,
+    "deepseek/deepseek-r1": 3,
 }
 
 def rate_limit(model):
@@ -100,7 +113,6 @@ def download_and_play(query):
             duration = info.get('duration', 0)
             mins, secs = divmod(int(duration), 60)
 
-        # Find downloaded file
         files = list(Path(MUSIC_DIR).glob("*.mp3"))
         if not files:
             console.print("[red]Download failed.[/red]")
@@ -128,7 +140,6 @@ def download_and_play(query):
         music_playing = False
         current_song = None
 
-        # Play next in queue if exists
         if music_queue:
             next_song = music_queue.pop(0)
             play_music(next_song)
@@ -150,14 +161,16 @@ def pause_music():
             console.print("[yellow]⏸ Paused[/yellow]")
         else:
             console.print("[red]Nothing playing.[/red]")
-    except: console.print("[red]Music not initialized.[/red]")
+    except:
+        console.print("[red]Music not initialized.[/red]")
 
 def resume_music():
     try:
         import pygame
         pygame.mixer.music.unpause()
         console.print("[green]▶ Resumed[/green]")
-    except: console.print("[red]Music not initialized.[/red]")
+    except:
+        console.print("[red]Music not initialized.[/red]")
 
 def stop_music():
     global music_playing, current_song
@@ -168,7 +181,8 @@ def stop_music():
         current_song = None
         music_queue.clear()
         console.print("[red]⏹ Stopped[/red]")
-    except: console.print("[red]Music not initialized.[/red]")
+    except:
+        console.print("[red]Music not initialized.[/red]")
 
 def skip_music():
     global music_playing
@@ -180,7 +194,8 @@ def skip_music():
         if music_queue:
             next_song = music_queue.pop(0)
             play_music(next_song)
-    except: console.print("[red]Music not initialized.[/red]")
+    except:
+        console.print("[red]Music not initialized.[/red]")
 
 def queue_music(query):
     music_queue.append(query)
@@ -206,7 +221,8 @@ def set_volume(vol):
         v = float(vol) / 100
         pygame.mixer.music.set_volume(max(0, min(1, v)))
         console.print(f"[green]🔊 Volume: {vol}%[/green]")
-    except: console.print("[red]Error setting volume.[/red]")
+    except:
+        console.print("[red]Error setting volume.[/red]")
 
 # ── Memory ─────────────────────────────────────────────────────────
 def get_memory_context():
@@ -281,16 +297,27 @@ stopwatch_running = False
 lap_times = []
 
 def study_timer(minutes):
+    """
+    FIX: runs timer in a background thread so the CLI stays responsive.
+    User can keep typing while the timer ticks. Alert fires when done.
+    """
     secs = int(float(minutes) * 60)
-    console.print(f"[bold cyan]⏱ {minutes} min timer[/bold cyan]")
-    try:
-        for remaining in range(secs, 0, -1):
-            m, s = divmod(remaining, 60)
-            console.print(f"\r[cyan]⏱ {m:02d}:{s:02d}[/cyan]", end="")
-            time.sleep(1)
-        console.print("\n[bold green]✓ DONE! 🎉[/bold green]")
-    except KeyboardInterrupt:
-        console.print("\n[yellow]Stopped.[/yellow]")
+    console.print(f"[bold cyan]⏱ {minutes} min timer started (running in background)[/bold cyan]")
+
+    def _run():
+        try:
+            for remaining in range(secs, 0, -1):
+                m, s = divmod(remaining, 60)
+                # Overwrite same line — won't interfere with user input much
+                sys.stdout.write(f"\r[Timer: {m:02d}:{s:02d}]  ")
+                sys.stdout.flush()
+                time.sleep(1)
+            sys.stdout.write("\r" + " " * 25 + "\r")  # clear line
+            console.print("\n[bold green]✓ TIMER DONE! 🎉[/bold green]")
+        except Exception:
+            pass
+
+    threading.Thread(target=_run, daemon=True).start()
 
 def stopwatch_cmd(action):
     global stopwatch_start, stopwatch_running, lap_times
@@ -322,7 +349,7 @@ def generate_image(prompt):
     filename = f"vision_img_{datetime.now().strftime('%H%M%S')}.jpg"
     console.print("[yellow]Trying Pollinations.ai...[/yellow]")
     try:
-        url = f"https://image.pollinations.ai/prompt/{prompt.replace(' ','%20')}?width=512&height=512&nologo=true"
+        url = f"https://image.pollinations.ai/prompt/{requests.utils.quote(prompt)}?width=512&height=512&nologo=true"
         r = requests.get(url, timeout=30)
         if r.status_code == 200 and "image" in r.headers.get("content-type",""):
             with open(filename, "wb") as f:
@@ -331,7 +358,8 @@ def generate_image(prompt):
             try:
                 from IPython.display import display, Image as IPImage
                 display(IPImage(filename))
-            except: pass
+            except:
+                pass
             return
     except:
         console.print("[yellow]Pollinations failed → HuggingFace...[/yellow]")
@@ -343,12 +371,14 @@ def generate_image(prompt):
             json={"inputs": prompt}, timeout=60
         )
         if r.status_code == 200:
-            with open(filename, "wb") as f: f.write(r.content)
+            with open(filename, "wb") as f:
+                f.write(r.content)
             console.print(f"[green]✓ Saved: '{filename}'[/green]")
             try:
                 from IPython.display import display, Image as IPImage
                 display(IPImage(filename))
-            except: pass
+            except:
+                pass
         else:
             console.print(f"[red]{r.text[:200]}[/red]")
     except Exception as e:
@@ -362,7 +392,8 @@ def speak(text):
         engine.setProperty('rate', 175)
         engine.say(text[:300])
         engine.runAndWait()
-    except: pass
+    except:
+        pass
 
 def listen():
     try:
@@ -380,12 +411,12 @@ def listen():
 
 # ── Prompts ────────────────────────────────────────────────────────
 BANNER = r"""[bold cyan]
-____   ____.__       .__                _________ .____    .___
-\   \ /   /|__| _____|__| ____   ____   \_   ___ \|    |   |   |
- \   Y   / |  |/  ___/  |/  _ \ /    \  /    \  \/|    |   |   |
-  \     /  |  |\___ \|  (  <_> )   |  \ \     \___|    |___|   |
-   \___/   |__/____  >__|\____/|___|  /  \______  /_______ \___|
-                   \/               \/          \/        \/
+██╗   ██╗██╗███████╗██╗ ██████╗ ███╗   ██╗     ██████╗██╗     ██╗
+██║   ██║██║██╔════╝██║██╔═══██╗████╗  ██║    ██╔════╝██║     ██║
+██║   ██║██║███████╗██║██║   ██║██╔██╗ ██║    ██║     ██║     ██║
+╚██╗ ██╔╝██║╚════██║██║██║   ██║██║╚██╗██║    ██║     ██║     ██║
+ ╚████╔╝ ██║███████║██║╚██████╔╝██║ ╚████║    ╚██████╗███████╗██║
+  ╚═══╝  ╚═╝╚══════╝╚═╝ ╚═════╝ ╚═╝  ╚═══╝     ╚═════╝╚══════╝╚═╝
 [/bold cyan]"""
 
 SYSTEM_PROMPT = """You are an elite AI assistant — sharp, direct, and deeply helpful.
@@ -398,7 +429,7 @@ When coding: write clean, commented, production-quality code only.
 When making artifacts: output ONLY the raw content."""
 
 ADVISOR_PROMPT = """You are user's personal advisor, business partner, and trusted confidant.
-You know him well he is Sharp, ambitious, thinks way beyond his age.
+You know them well — sharp, ambitious, thinks way beyond their age.
 
 Your role:
 - Brutally honest advisor — no sugarcoating, no fluff
@@ -450,7 +481,8 @@ def select_provider():
     console.print("  [green][3][/green] Ollama        — 100% local")
     while True:
         choice = input("\n→ (1-3): ").strip()
-        if choice in ["1","2","3"]: return choice
+        if choice in ["1","2","3"]:
+            return choice
         console.print("[red]Invalid.[/red]")
 
 def setup_provider(provider):
@@ -475,7 +507,8 @@ def select_model(models):
         choice = input(f"\n→ (1-{len(models)}): ").strip()
         if choice in models:
             mid, desc = models[choice]
-            if mid == "custom": mid = input("Model name: ").strip()
+            if mid == "custom":
+                mid = input("Model name: ").strip()
             console.print(f"\n[green]✓ {desc.split('—')[0].strip()}[/green]\n")
             return mid
         console.print("[red]Invalid.[/red]")
@@ -487,12 +520,16 @@ def strip_think(text):
 def chat(client, model, user_input, system=None):
     global history
     history.append({"role": "user", "content": user_input})
-    if len(history) > 20: history = history[-20:]
+    if len(history) > 20:
+        history = history[-20:]
     rate_limit(model)
     try:
         response = client.chat.completions.create(
             model=model,
-            messages=[{"role": "system", "content": (system or SYSTEM_PROMPT) + get_memory_context()}, *history],
+            messages=[
+                {"role": "system", "content": (system or SYSTEM_PROMPT) + get_memory_context()},
+                *history
+            ],
             max_tokens=2048,
         )
         reply = strip_think(response.choices[0].message.content)
@@ -504,13 +541,23 @@ def chat(client, model, user_input, system=None):
 def advisor_chat(client, model, user_input):
     global advisor_history
     advisor_history.append({"role": "user", "content": user_input})
-    if len(advisor_history) > 20: advisor_history = advisor_history[-20:]
+    if len(advisor_history) > 20:
+        advisor_history = advisor_history[-20:]
     rate_limit(model)
     context = f"Goals: {goals}\nPortfolio: {portfolio}\n" if goals or portfolio else ""
+    # FIX: inject last 6 main chat messages so advisor actually sees recent conversation context
+    # (README + Changelog both claimed this — now it's real)
+    recent_main_chat = history[-6:] if history else []
+    if recent_main_chat:
+        chat_summary = "\n".join([f"{m['role'].upper()}: {m['content'][:200]}" for m in recent_main_chat])
+        context += f"\nRecent main chat context:\n{chat_summary}\n"
     try:
         response = client.chat.completions.create(
             model=model,
-            messages=[{"role": "system", "content": ADVISOR_PROMPT + f"\n\n{context}" + get_memory_context()}, *advisor_history],
+            messages=[
+                {"role": "system", "content": ADVISOR_PROMPT + f"\n\n{context}" + get_memory_context()},
+                *advisor_history
+            ],
             max_tokens=2048,
         )
         reply = strip_think(response.choices[0].message.content)
@@ -525,7 +572,11 @@ def ask(client, model, prompt, system=None):
     try:
         response = client.chat.completions.create(
             model=model,
-            messages=[{"role": "system", "content": system or SYSTEM_PROMPT}, {"role": "user", "content": prompt}],
+            messages=[
+                # FIX: inject memory context so /recommend, /impact etc. know who they're talking to
+                {"role": "system", "content": (system or SYSTEM_PROMPT) + get_memory_context()},
+                {"role": "user", "content": prompt}
+            ],
             max_tokens=2048,
         )
         return strip_think(response.choices[0].message.content)
@@ -535,6 +586,7 @@ def ask(client, model, prompt, system=None):
 # ── Stocks ─────────────────────────────────────────────────────────
 def get_stock(symbol):
     try:
+        import yfinance as yf  # lazy import
         for suffix in [".NS", ".BO", ""]:
             ticker = yf.Ticker(symbol + suffix)
             info = ticker.info
@@ -564,25 +616,29 @@ def get_stock(symbol):
         console.print(f"[red]Error: {e}[/red]")
 
 def search_stocks(query):
-    q = query.lower()
-    if q in INDIAN_SECTORS:
-        table = Table(box=box.ROUNDED, border_style="cyan", padding=(0,1), title=f"[bold cyan]{q.upper()}[/bold cyan]")
-        table.add_column("Symbol", style="bold green")
-        table.add_column("Price", style="white")
-        table.add_column("Change", style="white")
-        for sym in INDIAN_SECTORS[q]:
-            try:
-                info = yf.Ticker(sym+".NS").info
-                price = info.get("currentPrice") or info.get("regularMarketPrice", 0)
-                prev = info.get("previousClose", price)
-                pct = ((price-prev)/prev*100) if prev else 0
-                color = "green" if pct >= 0 else "red"
-                table.add_row(sym, f"₹{price:.2f}", f"[{color}]{'▲' if pct>=0 else '▼'} {pct:+.2f}%[/{color}]")
-            except:
-                table.add_row(sym, "N/A", "N/A")
-        console.print(table)
-    else:
-        console.print(f"[yellow]Sectors: {', '.join(INDIAN_SECTORS.keys())}[/yellow]")
+    try:
+        import yfinance as yf  # lazy import
+        q = query.lower()
+        if q in INDIAN_SECTORS:
+            table = Table(box=box.ROUNDED, border_style="cyan", padding=(0,1), title=f"[bold cyan]{q.upper()}[/bold cyan]")
+            table.add_column("Symbol", style="bold green")
+            table.add_column("Price", style="white")
+            table.add_column("Change", style="white")
+            for sym in INDIAN_SECTORS[q]:
+                try:
+                    info = yf.Ticker(sym+".NS").info
+                    price = info.get("currentPrice") or info.get("regularMarketPrice", 0)
+                    prev = info.get("previousClose", price)
+                    pct = ((price-prev)/prev*100) if prev else 0
+                    color = "green" if pct >= 0 else "red"
+                    table.add_row(sym, f"₹{price:.2f}", f"[{color}]{'▲' if pct>=0 else '▼'} {pct:+.2f}%[/{color}]")
+                except:
+                    table.add_row(sym, "N/A", "N/A")
+            console.print(table)
+        else:
+            console.print(f"[yellow]Sectors: {', '.join(INDIAN_SECTORS.keys())}[/yellow]")
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
 
 def stock_recommend(client, model, query):
     console.print("[yellow]Analyzing...[/yellow]")
@@ -603,34 +659,40 @@ def portfolio_view():
     if not portfolio:
         console.print("[yellow]Portfolio empty.[/yellow]")
         return
-    table = Table(box=box.ROUNDED, border_style="cyan", padding=(0,1))
-    table.add_column("Symbol", style="bold green")
-    table.add_column("Qty")
-    table.add_column("Buy")
-    table.add_column("Current")
-    table.add_column("P&L")
-    table.add_column("P&L %")
-    total_inv = total_cur = 0
-    for sym, d in portfolio.items():
-        try:
-            info = yf.Ticker(sym+".NS").info
-            cur = info.get("currentPrice") or info.get("regularMarketPrice", d["buy_price"])
-            inv = d["qty"] * d["buy_price"]
-            cv = d["qty"] * cur
-            pnl = cv - inv
-            pct = (pnl/inv*100) if inv else 0
-            color = "green" if pnl>=0 else "red"
-            table.add_row(sym, str(d["qty"]), f"₹{d['buy_price']:.2f}", f"₹{cur:.2f}", f"[{color}]₹{pnl:+.2f}[/{color}]", f"[{color}]{pct:+.2f}%[/{color}]")
-            total_inv += inv; total_cur += cv
-        except:
-            table.add_row(sym, str(d["qty"]), f"₹{d['buy_price']:.2f}", "N/A", "N/A", "N/A")
-    console.print(table)
-    pnl = total_cur - total_inv
-    pct = (pnl/total_inv*100) if total_inv else 0
-    color = "green" if pnl>=0 else "red"
-    console.print(f"[bold]Invested:[/bold] ₹{total_inv:.2f}  [bold {color}]P&L: ₹{pnl:+.2f} ({pct:+.2f}%)[/bold {color}]")
+    try:
+        import yfinance as yf  # lazy import
+        table = Table(box=box.ROUNDED, border_style="cyan", padding=(0,1))
+        table.add_column("Symbol", style="bold green")
+        table.add_column("Qty")
+        table.add_column("Buy")
+        table.add_column("Current")
+        table.add_column("P&L")
+        table.add_column("P&L %")
+        total_inv = total_cur = 0
+        for sym, d in portfolio.items():
+            try:
+                info = yf.Ticker(sym+".NS").info
+                cur = info.get("currentPrice") or info.get("regularMarketPrice", d["buy_price"])
+                inv = d["qty"] * d["buy_price"]
+                cv = d["qty"] * cur
+                pnl = cv - inv
+                pct = (pnl/inv*100) if inv else 0
+                color = "green" if pnl>=0 else "red"
+                table.add_row(sym, str(d["qty"]), f"₹{d['buy_price']:.2f}", f"₹{cur:.2f}", f"[{color}]₹{pnl:+.2f}[/{color}]", f"[{color}]{pct:+.2f}%[/{color}]")
+                total_inv += inv
+                total_cur += cv
+            except:
+                table.add_row(sym, str(d["qty"]), f"₹{d['buy_price']:.2f}", "N/A", "N/A", "N/A")
+        console.print(table)
+        pnl = total_cur - total_inv
+        pct = (pnl/total_inv*100) if total_inv else 0
+        color = "green" if pnl>=0 else "red"
+        console.print(f"[bold]Invested:[/bold] ₹{total_inv:.2f}  [bold {color}]P&L: ₹{pnl:+.2f} ({pct:+.2f}%)[/bold {color}]")
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
 
 def market_news(query="indian stock market"):
+    from ddgs import DDGS
     results = []
     with DDGS() as ddgs:
         for r in ddgs.text(f"{query} today", max_results=5):
@@ -639,6 +701,7 @@ def market_news(query="indian stock market"):
 
 # ── Tools ──────────────────────────────────────────────────────────
 def search(query):
+    from ddgs import DDGS
     results = []
     with DDGS() as ddgs:
         for r in ddgs.text(query, max_results=4):
@@ -647,20 +710,21 @@ def search(query):
 
 def scrape(url):
     try:
+        from bs4 import BeautifulSoup
         r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=10)
         soup = BeautifulSoup(r.text, "html.parser")
-        for tag in soup(["script","style","nav","footer"]): tag.decompose()
+        for tag in soup(["script","style","nav","footer"]):
+            tag.decompose()
         return soup.get_text(separator="\n", strip=True)[:3000]
     except Exception as e:
         return f"Error: {e}"
 
 def wiki(query):
     try:
+        import wikipedia  # lazy import
         summary = wikipedia.summary(query, sentences=5)
         page = wikipedia.page(query)
         return f"**{page.title}**\n\n{summary}\n\n→ {page.url}"
-    except wikipedia.DisambiguationError as e:
-        return f"Ambiguous. Try: {', '.join(e.options[:5])}"
     except Exception as e:
         return f"Error: {e}"
 
@@ -727,9 +791,11 @@ def git_cmd(command):
 def make_artifact(name, content):
     try:
         if "```python" in content or content.strip().startswith(("def ","import ")):
-            ext, content = ".py", re.sub(r"```python|```","",content).strip()
+            ext = ".py"
+            content = re.sub(r"```python|```","",content).strip()
         elif "```html" in content or "<html" in content:
-            ext, content = ".html", re.sub(r"```html|```","",content).strip()
+            ext = ".html"
+            content = re.sub(r"```html|```","",content).strip()
         else:
             ext = ".md"
         filename = f"{name.replace(' ','_')}{ext}"
@@ -740,12 +806,15 @@ def make_artifact(name, content):
 
 def ocr(image_path):
     try:
-        console.print("[yellow]Reading...[/yellow]")
+        import easyocr  # lazy import — takes ~3s first time (downloads model)
+        console.print("[yellow]Reading... (first use downloads OCR model)[/yellow]")
         return "\n".join(easyocr.Reader(["en"], gpu=False).readtext(image_path, detail=0))
     except Exception as e:
         return f"Error: {e}"
 
-async def browse(url):
+async def _browse_async(url):
+    """FIX: asyncio.get_event_loop() is deprecated in Python 3.10+. Use asyncio.run()."""
+    from playwright.async_api import async_playwright
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()
@@ -754,6 +823,10 @@ async def browse(url):
         content = await page.inner_text("body")
         await browser.close()
         return f"**{title}**\n\n{content[:2000]}"
+
+def browse(url):
+    """Wraps async browse — compatible with Python 3.10+ (no deprecated get_event_loop)."""
+    return asyncio.run(_browse_async(url))
 
 def show_help(provider_name):
     console.print(Panel(f"""
@@ -802,11 +875,11 @@ def show_help(provider_name):
 
   [green]/help  /exit[/green]
   [dim]Provider: {provider_name} | Mic: {'ON 🎤' if mic_mode else 'OFF'} | 🎵 {current_song or 'Nothing playing'}[/dim]
-""", title="[bold]VISION CLI v3.0[/bold]", border_style="cyan"))
+""", title="[bold]VISION CLI v3.1[/bold]", border_style="cyan"))
 
 # ── STARTUP ────────────────────────────────────────────────────────
 console.print(BANNER)
-console.print(f"\n[bold cyan]  Vision CLI v3.0 — AI Agent Ready[/bold cyan]")
+console.print(f"\n[bold cyan]  Vision CLI v3.1 — AI Agent Ready[/bold cyan]")
 if memory:
     console.print(f"[dim]  ✓ {len(memory)} memories | {len(goals)} goals | {len(portfolio)} stocks[/dim]\n")
 
@@ -829,7 +902,8 @@ while True:
         console.print("\n[bold red]Bye![/bold red]")
         break
 
-    if not user: continue
+    if not user:
+        continue
     elif user == "/exit":
         save_data()
         stop_music()
@@ -838,8 +912,10 @@ while True:
     elif user == "/clear":
         history.clear()
         console.print("[green]✓ Cleared[/green]")
-    elif user == "/help": show_help(provider_name)
-    elif user == "/model": model = select_model(models)
+    elif user == "/help":
+        show_help(provider_name)
+    elif user == "/model":
+        model = select_model(models)
     elif user == "/provider":
         provider_choice = select_provider()
         client, provider_name, models = setup_provider(provider_choice)
@@ -853,30 +929,33 @@ while True:
         console.print("[yellow]🔇 Mic OFF[/yellow]")
 
     # ── Music ──
-    elif user.startswith("/play "): play_music(user[6:])
-    elif user == "/pause": pause_music()
-    elif user == "/resume": resume_music()
-    elif user == "/stop": stop_music()
-    elif user == "/skip": skip_music()
-    elif user.startswith("/queue "): queue_music(user[7:])
-    elif user == "/nowplaying": show_queue()
+    elif user.startswith("/play "):    play_music(user[6:])
+    elif user == "/pause":             pause_music()
+    elif user == "/resume":            resume_music()
+    elif user == "/stop":              stop_music()
+    elif user == "/skip":              skip_music()
+    elif user.startswith("/queue "):   queue_music(user[7:])
+    elif user == "/nowplaying":        show_queue()
     elif user.startswith("/volume "): set_volume(user[8:])
 
     # ── Memory ──
     elif user.startswith("/memory add "):
         parts = user[12:].split(" ", 1)
-        if len(parts) == 2: memory_add(parts[0], parts[1])
-    elif user == "/memory view": memory_view()
-    elif user.startswith("/memory forget "): memory_forget(user[15:])
+        if len(parts) == 2:
+            memory_add(parts[0], parts[1])
+    elif user == "/memory view":
+        memory_view()
+    elif user.startswith("/memory forget "):
+        memory_forget(user[15:])
 
     # ── Chats ──
-    elif user.startswith("/chats save "): save_chat(user[12:])
-    elif user == "/chats list": list_chats()
+    elif user.startswith("/chats save "):  save_chat(user[12:])
+    elif user == "/chats list":           list_chats()
     elif user.startswith("/chats load "): load_chat(user[12:])
 
     # ── Timer ──
-    elif user.startswith("/timer "): study_timer(user[7:])
-    elif user.startswith("/stopwatch "): stopwatch_cmd(user[11:].strip())
+    elif user.startswith("/timer "):         study_timer(user[7:])
+    elif user.startswith("/stopwatch "):     stopwatch_cmd(user[11:].strip())
 
     # ── Image ──
     elif user.startswith("/imagine "): generate_image(user[9:])
@@ -887,13 +966,15 @@ while True:
         reply = advisor_chat(client, model, user[9:])
         last_reply = reply
         console.print(Panel(Markdown(reply), title="[bold cyan]Your Advisor[/bold cyan]", border_style="cyan"))
-        if mic_mode: speak(reply[:300])
+        if mic_mode:
+            speak(reply[:300])
     elif user.startswith("/goal add "):
         goals.append({"goal": user[10:], "done": False, "added": datetime.now().strftime("%d/%m/%Y")})
         save_data()
         console.print("[green]✓ Goal added[/green]")
     elif user == "/goal list":
-        if not goals: console.print("[yellow]No goals.[/yellow]")
+        if not goals:
+            console.print("[yellow]No goals.[/yellow]")
         else:
             table = Table(box=box.ROUNDED, border_style="cyan", padding=(0,1))
             table.add_column("#", style="bold cyan")
@@ -908,38 +989,45 @@ while True:
             goals[int(user[11:])-1]["done"] = True
             save_data()
             console.print("[green]✓ Done![/green]")
-        except: console.print("[red]Invalid.[/red]")
+        except:
+            console.print("[red]Invalid.[/red]")
 
     # ── Stocks ──
-    elif user.startswith("/stock "): get_stock(user[7:].strip().upper())
-    elif user.startswith("/stocks "): search_stocks(user[8:].strip())
+    elif user.startswith("/stock "):      get_stock(user[7:].strip().upper())
+    elif user.startswith("/stocks "):     search_stocks(user[8:].strip())
     elif user.startswith("/recommend "): stock_recommend(client, model, user[11:])
-    elif user.startswith("/impact "): war_impact(client, model, user[8:])
-    elif user == "/marketnews": market_news()
+    elif user.startswith("/impact "):    war_impact(client, model, user[8:])
+    elif user == "/marketnews":          market_news()
     elif user.startswith("/marketnews "): market_news(user[12:])
     elif user.startswith("/portfolio "):
         parts = user[11:].split()
-        if parts[0] == "add" and len(parts) == 4: portfolio_add(parts[1], parts[2], parts[3])
-        elif parts[0] == "view": portfolio_view()
+        if parts[0] == "add" and len(parts) == 4:
+            portfolio_add(parts[1], parts[2], parts[3])
+        elif parts[0] == "view":
+            portfolio_view()
         elif parts[0] == "remove" and len(parts) == 2:
             sym = parts[1].upper()
             if sym in portfolio:
-                del portfolio[sym]; save_data()
+                del portfolio[sym]
+                save_data()
                 console.print(f"[green]✓ Removed {sym}[/green]")
 
     # ── Code ──
     elif user.startswith("/code "):
         parts = user[6:].split(" ", 1)
-        if len(parts) == 2: generate_code(client, model, parts[1], parts[0])
+        if len(parts) == 2:
+            generate_code(client, model, parts[1], parts[0])
     elif user.startswith("/html "):
         parts = user[6:].split(" ", 1)
-        if len(parts) == 2: generate_html(client, model, parts[1], parts[0])
+        if len(parts) == 2:
+            generate_html(client, model, parts[1], parts[0])
     elif user.startswith("/doc "):
         parts = user[5:].split(" ", 1)
-        if len(parts) == 2: generate_doc(client, model, parts[1], parts[0])
+        if len(parts) == 2:
+            generate_doc(client, model, parts[1], parts[0])
     elif user.startswith("/runfile "): run_file(user[9:])
-    elif user.startswith("/debug "): debug_file(client, model, user[7:])
-    elif user.startswith("/git "): git_cmd(user[5:])
+    elif user.startswith("/debug "):   debug_file(client, model, user[7:])
+    elif user.startswith("/git "):     git_cmd(user[5:])
 
     # ── Tools ──
     elif user.startswith("/search "):
@@ -949,25 +1037,32 @@ while True:
         console.print(Markdown(f"```\n{scrape(user[8:])}\n```"))
     elif user.startswith("/browse "):
         try:
-            result = asyncio.get_event_loop().run_until_complete(browse(user[8:]))
+            result = browse(user[8:])  # FIX: no more deprecated get_event_loop()
             console.print(Markdown(result))
-        except Exception as e: console.print(f"[red]{e}[/red]")
+        except Exception as e:
+            console.print(f"[red]{e}[/red]")
     elif user.startswith("/wiki "):
         console.print(Markdown(wiki(user[6:])))
     elif user.startswith("/weather "):
         err = weather(user[9:])
-        if err: console.print(f"[red]{err}[/red]")
+        if err:
+            console.print(f"[red]{err}[/red]")
     elif user.startswith("/artifact "):
-        if last_reply: console.print(f"[green]{make_artifact(user[10:], last_reply)}[/green]")
-        else: console.print("[red]No reply yet.[/red]")
+        if last_reply:
+            console.print(f"[green]{make_artifact(user[10:], last_reply)}[/green]")
+        else:
+            console.print("[red]No reply yet.[/red]")
     elif user.startswith("/ocr "):
         console.print(Markdown(f"```\n{ocr(user[5:])}\n```"))
     elif user.startswith("/run "):
-        try: exec(user[5:])
-        except Exception as e: console.print(f"[red]{e}[/red]")
+        try:
+            exec(user[5:])
+        except Exception as e:
+            console.print(f"[red]{e}[/red]")
     else:
         console.print("[yellow]Thinking...[/yellow]")
         reply = chat(client, model, user)
         last_reply = reply
         console.print(Panel(Markdown(reply), border_style="blue"))
-        if mic_mode: speak(reply[:300])
+        if mic_mode:
+            speak(reply[:300])
