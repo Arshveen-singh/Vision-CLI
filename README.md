@@ -182,4 +182,5 @@ MIT — do whatever you want with it.
 
 ---
 
-> Built on a Sunday. On dad's PC. While listening to Zafarnama. 💀
+> Built on a Sunday. On dad's PC.
+
