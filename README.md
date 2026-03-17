@@ -16,7 +16,6 @@ A fast, beautiful, memory-aware AI agent that transforms your command line into 
 One file. Zero bloat. Runs instantly.
 
 ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![Groq](https://img.shields.io/badge/Groq-Powered-F55036?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-00e5cc?style=for-the-badge)
 ![Version](https://img.shields.io/badge/Version-3.0.0-7b4fff?style=for-the-badge)
 ![Made in India](https://img.shields.io/badge/Made%20in-India-FF9933?style=for-the-badge)
