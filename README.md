@@ -1,4 +1,8 @@
-# Vision CLI
+# Vision CLI v4.0
+
+**Very Intelligent System I Occasionally Need**
+
+A privacy-first, open-source AI terminal agent built by [Arshveen Singh](https://github.com/Arshveen-singh). Run any LLM from your terminal — with multi-model council debates, GitHub integration, automation scheduling, Telegram, smart memory, and more.
 
 ```
 ██╗   ██╗██╗███████╗██╗ ██████╗ ███╗   ██╗     ██████╗██╗     ██╗
@@ -9,176 +13,331 @@
   ╚═══╝  ╚═╝╚══════╝╚═╝ ╚═════╝ ╚═╝  ╚═══╝     ╚═════╝╚══════╝╚═╝
 ```
 
-**Your terminal. Now with superpowers.**
+---
 
-A fast, beautiful, memory-aware AI agent that transforms your command line into a personal JARVIS. Built with Rich UI, Groq-speed inference, and India-first finance tools.
+## What is Vision CLI?
 
-One file. Zero bloat. Runs instantly.
+Vision CLI is a Python-based terminal AI agent that:
 
-![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-00e5cc?style=for-the-badge)
-![Version](https://img.shields.io/badge/Version-3.0.0-7b4fff?style=for-the-badge)
-![Made in India](https://img.shields.io/badge/Made%20in-India-FF9933?style=for-the-badge)
+- Connects to **9 AI providers** (Groq, OpenRouter, Ollama, Together, Fireworks, Mistral, Cerebras, NVIDIA NIM, SambaNova)
+- Runs an **LLM Council** — multiple models answer in parallel, a Chairman synthesizes the verdict
+- Has a **Debate Mode** — models argue FOR/AGAINST on any motion
+- Tracks **persistent memory** across sessions, tagged and auto-extracted
+- Integrates with **GitHub** — load repos, ask questions, multi-model code review
+- Schedules **automations** — daily news, portfolio checks, Telegram alerts
+- **Streams responses** in real-time
+- Plays **music** from YouTube via yt-dlp
+- Understands **images** via vision-capable models
+- Has a separate **Advisor mode** — brutally honest personal advisor with goal tracking
+- Is **100% open source** and runs locally or on Google Colab
 
 ---
 
-## ✦ What is Vision CLI?
+## Quickstart (Google Colab)
 
-Vision CLI is a one-file AI agent for your terminal. It combines real-time web search, Indian stock market data, a personal advisor, persistent memory, image generation, voice control, and a full code assistant.
+```python
+# Install dependencies
+!pip install openai groq rich yfinance duckduckgo-search requests \
+             beautifulsoup4 wikipedia PyGithub
+
+# Run
+!python vision_cli_v4.py
+```
+
+Set your API key as an environment variable before running:
+
+```python
+import os
+os.environ["OPENROUTER_API_KEY"] = "sk-or-..."   # OpenRouter (recommended)
+os.environ["GROQ_API_KEY"] = "gsk_..."            # Groq (free, ultra fast)
+```
+
 ---
 
-## ⚡ Quick Start
+## Quickstart (Local)
 
 ```bash
-git clone https://github.com/Arshveen-singh/CLI-project.git
-cd CLI-project
+# Clone
+git clone https://github.com/Arshveen-singh/Vision-CLI
+cd Vision-CLI
+
+# Install
 pip install -r requirements.txt
-playwright install chromium
-export GROQ_API_KEY=your_key_here
-python vision_cli.py
-```
 
-Get your free Groq key → [console.groq.com](https://console.groq.com)
-
----
-
-## ✦ Features
-
-### 🤖 AI Chat
-- 3 providers — **Groq**, **OpenRouter**, **Ollama**
-- Models: Kimi K2, Qwen 3 32B, LLaMA 3.3 70B, Claude, Gemini, DeepSeek + more
-- Switch provider or model anytime mid-session
-- History trimming + rate limiting built in
-
-### 🧠 Persistent Memory
-- Remembers facts across every session
-- Memory shared across chat, advisor, and finance modes
-- Add, view, forget memories anytime
-
-### 📈 Indian Stock Market
-- Live NSE/BSE prices + US stocks (AAPL, TSLA, MSFT etc.)
-- 9 sector dashboards (banking, IT, pharma, auto, Tata, Adani...)
-- Portfolio tracker with real-time P&L
-- AI stock recommendations + war/event market impact analysis
-- Live market news
-
-### 🎯 Personal Advisor
-- Brutally honest business partner and life advisor
-- Remembers your goals, portfolio, and past conversations
-- Evaluates ideas, tracks goals, gives real financial advice
-- Sees context from your main chat automatically
-
-### 🛠 Developer Tools
-- Generate Python, HTML, and Markdown files
-- Run, debug, and fix code with AI
-- Git integration
-- Inline Python execution
-
-### 🌐 Web Tools
-- Web search, scraping, headless browser (will make it fully functional), Wikipedia, weather
-
-### 🎨 Media
-- AI image generation (Pollinations.ai + HuggingFace fallback)
-- Stream any song via YouTube
-- OCR — extract text from images
-
-### ⏱ Productivity
-- Study timer, stopwatch, voice input toggle
-- Save and restore conversations
-- Artifact maker — save AI replies as files
-
----
-
-## 📋 Commands
-
-```
-── AI ──────────────────────────────────────────────────────
-/model                    Switch model
-/provider                 Switch provider
-/clear                    Clear chat history
-
-── Memory ──────────────────────────────────────────────────
-/memory add <key> <val>   Save a memory
-/memory view              View all memories
-/memory forget <key>      Delete a memory
-
-── Advisor ─────────────────────────────────────────────────
-/advisor <message>        Personal advisor
-/goal add/list/done       Goal tracker
-
-── Stocks ──────────────────────────────────────────────────
-/stock <SYMBOL>           Live price (NSE/BSE/US)
-/stocks <sector>          Sector dashboard
-/recommend <query>        AI stock picks
-/impact <event>           Market impact analysis
-/portfolio add/view       Portfolio + P&L
-/marketnews               Market news
-
-── Code ────────────────────────────────────────────────────
-/code <file> <prompt>     Generate .py
-/html <file> <prompt>     Generate .html
-/doc  <file> <prompt>     Generate .md
-/runfile <file>           Run a file
-/debug <file>             AI fixes a file
-/run <code>               Inline Python
-/git <command>            Git command
-
-── Tools ───────────────────────────────────────────────────
-/search   /scrape   /browse   /wiki   /weather
-/imagine  /play     /ocr      /artifact
-/chats save/list/load
-/mic on/off   /timer   /stopwatch
-/help   /exit
+# Run
+python vision_cli_v4.py
 ```
 
 ---
 
-## 🔑 API Keys
-
-| Service | Required | Free |
-|---|---|---|
-| [Groq](https://console.groq.com) | If using Groq | ✅ Yes |
-| [OpenRouter](https://openrouter.ai) | If using OpenRouter | ✅ Free tier |
-| Ollama | If running locally | ✅ Local |
-
----
-
-## 🗂 Project Structure
+## Requirements
 
 ```
-CLI-project/
-├── vision_cli.py       — The entire CLI (one file)
-├── vision_data.json    — Persistent data (auto-created)
-├── vision_chats/       — Saved conversations (auto-created)
-├── requirements.txt    — pip dependencies
-├── SETUP.md            — Setup guide
-├── REQUIREMENTS.md     — Requirements docs
-├── CHANGELOG.md        — Version history
-├── CONTRIBUTING.md     — How to contribute
-├── .gitignore
-└── LICENSE
+openai>=1.0.0
+groq
+rich
+yfinance
+duckduckgo-search
+requests
+beautifulsoup4
+wikipedia
+PyGithub
+
+# Optional (install for specific features)
+yt-dlp          # /play music
+pygame          # music playback
+pyttsx3         # TTS /mic
+SpeechRecognition # voice input
+easyocr         # /ocr
+playwright      # /browse
 ```
 
 ---
 
-## 🛠 Built With
+## Features
 
-[Rich](https://github.com/Textualize/rich) · [Groq](https://groq.com) · [yfinance](https://github.com/ranaroussi/yfinance) · [Playwright](https://playwright.dev) · [EasyOCR](https://github.com/JaidedAI/EasyOCR) · [yt-dlp](https://github.com/yt-dlp/yt-dlp) · [DuckDuckGo Search](https://github.com/deedy5/ddgs) · [Pollinations.ai](https://pollinations.ai)
+### 9 AI Providers
+
+| # | Provider | Free Tier | Speed | Best For |
+|---|----------|-----------|-------|----------|
+| 1 | **Groq** | ✅ Generous | ⚡ Ultra fast | Daily use |
+| 2 | **OpenRouter** | ✅ Some models | 🔥 Varies | Access any model |
+| 3 | **Ollama** | ✅ Fully free | 🖥️ Local | Privacy, offline |
+| 4 | **Together AI** | ✅ Free tier | ⚡ Fast | Open source models |
+| 5 | **Fireworks AI** | ✅ Free tier | ⚡ Fast | Inference speed |
+| 6 | **Mistral AI** | ❌ Paid | 🔥 Fast | Official Mistral |
+| 7 | **Cerebras** | ✅ Free tier | ⚡⚡ Groq-speed | LLaMA models |
+| 8 | **NVIDIA NIM** | ✅ Free credits | 🔥 Fast | 405B Llama |
+| 9 | **SambaNova** | ✅ Free | 🔥 Fast | Free 405B Llama |
+| 10 | **Bytez** | ✅ Free tier | 🔄 Variable | 175k+ HuggingFace models |
 
 ---
 
-## 📄 License
+### LLM Council ⚖
 
-MIT — do whatever you want with it.
+The flagship feature. Ask a question and get multiple AI models answering independently — then a Chairman synthesizes a final verdict.
+
+```
+/council is learning to code more valuable than a degree in 2026?
+
+→ Grok 4.20:       "Depends on the field..."
+→ Gemini 2.0:      "Coding is table stakes..."
+→ DeepSeek R1:     "The credential still matters..."
+→ LLaMA 3.3:       "Hybrid path is optimal..."
+
+⚖ Chairman (Claude Opus): [Final synthesized verdict]
+```
+
+**Debate Mode** — models argue assigned positions:
+
+```
+/debate AI will replace software engineers within 10 years
+
+→ Grok:      FOR  — argues the case
+→ Gemini:    AGAINST — argues the counter
+→ DeepSeek:  SKEPTIC — challenges both
+→ Chairman:  Judges + gives real answer
+```
 
 ---
 
-## 👨‍💻 Author
+### Smart Memory
 
-**Arshveen Singh**
-[Arshveensingh@proton.me](mailto:Arshveensingh@proton.me) · [github.com/Arshveen-singh](https://github.com/Arshveen-singh)
+Vision automatically remembers things about you across sessions:
+
+```
+/memory add name Arshveen #personal
+/memory add project Vision CLI #personal
+/memory view
+/memory view #stock
+/memory forget name
+```
+
+Auto-memory runs silently in the background after every conversation — it extracts facts worth saving without you having to ask.
 
 ---
 
-> Built on a Sunday. On dad's PC.
+### GitHub Integration
 
+```bash
+/ghconnect                      # Connect your GitHub account
+/myrepos                        # List your repos
+/repoload Arshveen-singh/Vision-CLI   # Load repo into context
+/repofile src/main.py           # Read a specific file
+/repoask how does the auth work?  # Ask about the loaded repo
+/reporeview                     # Council reviews the codebase
+/commit "feat: add streaming"   # Stage all, commit, push
+```
+
+Council + GitHub = multi-model code review with a chairman verdict. No other tool does this.
+
+---
+
+### Automation Scheduler
+
+```bash
+# Daily morning market news
+/automate daily:09:00 | /marketnews | Morning market news
+
+# Every 30 minutes portfolio check
+/automate interval:30m | /portfolio view | Portfolio check
+
+# Send Telegram alert every 2 hours
+/automate interval:2h | chat:What's the latest AI news? | AI news alert
+
+/automations          # List all automations
+/autodelete 1         # Remove automation #1
+```
+
+---
+
+### Stocks
+
+```bash
+/stock RELIANCE          # Live price, P/E, 52-week range
+/stock AAPL              # Works for US stocks too
+/stocks banking          # Entire sector overview (NSE)
+/recommend growth stocks for 2026
+/impact Russia-Ukraine escalation   # War → market impact
+/portfolio add TCS 10 3800          # Add to portfolio
+/portfolio view                     # Live P&L
+/marketnews                         # Latest market headlines
+```
+
+Indian sectors supported: `banking`, `it`, `pharma`, `auto`, `tata`, `energy`, `fmcg`, `adani`, `smallcap`
+
+---
+
+### All Commands
+
+```
+── AI ──────────────────────────────────────────────
+/model          Switch model
+/provider       Switch provider
+/clear          Clear conversation history
+/stream         Toggle streaming on/off
+
+── Memory ──────────────────────────────────────────
+/memory add <key> <value> [#tag]
+/memory view [#tag]
+/memory forget <key>
+
+── Chats ───────────────────────────────────────────
+/chats save <name>
+/chats list
+/chats load <#>
+
+── Music 🎵 ─────────────────────────────────────────
+/play <song or artist>
+/pause  /resume  /stop  /skip
+/queue <song>
+/nowplaying
+/volume <0-100>
+
+── Voice ───────────────────────────────────────────
+/mic on   /mic off
+
+── Timer ───────────────────────────────────────────
+/timer <minutes>
+/stopwatch start/stop/lap/check
+
+── Image ───────────────────────────────────────────
+/imagine <prompt>             Free image gen (Pollinations)
+/vision <image_path> [question]   Image understanding
+
+── Advisor ─────────────────────────────────────────
+/advisor <message>
+/goal add <goal>
+/goal list
+/goal done <#>
+
+── Council ⚖ ────────────────────────────────────────
+/council <query>
+/debate <motion>
+/councilsetup
+
+── Multi-Agent 🤖 ───────────────────────────────────
+/agent <complex task>
+
+── GitHub 📁 ────────────────────────────────────────
+/ghconnect
+/myrepos
+/repoload <user/repo>
+/repofile <path>
+/repoask <question>
+/reporeview
+/commit <message>
+
+── Integrations 🔗 ──────────────────────────────────
+/telegramsetup
+/telegram <message>
+/telegramread
+/emailsetup
+/email <to> | <subject> | <body>
+
+── Automation ⚡ ─────────────────────────────────────
+/automate <trigger> | <action> | <description>
+/automations
+/autodelete <#>
+
+── Stocks ───────────────────────────────────────────
+/stock <SYMBOL>
+/stocks <sector>
+/recommend <query>
+/impact <event>
+/portfolio add <SYM> <qty> <buy_price>
+/portfolio view
+/portfolio remove <SYM>
+/marketnews [query]
+
+── Code ─────────────────────────────────────────────
+/code <filename.py> <what to build>
+/html <filename.html> <what to build>
+/doc <filename.md> <what to write>
+/runfile <filename>
+/debug <filename>
+/git <git command>
+
+── Tools ────────────────────────────────────────────
+/search <query>
+/scrape <url>
+/browse <url>
+/wiki <topic>
+/weather <city>
+/ocr <image_path>
+/artifact <name>
+
+── System ───────────────────────────────────────────
+/help
+/exit  /q  /quit
+```
+
+---
+
+## Roadmap
+
+| Version | Status | Features |
+|---------|--------|----------|
+| v3.5 | ✅ Done | 9 providers (Groq, OpenRouter, Ollama, Together, Fireworks, Mistral, Cerebras, NVIDIA, SambaNova) |
+| v3.6 | ✅ Done | Smart auto-memory, tagged memory, persistent storage |
+| v3.7 | ✅ Done | Real-time streaming, vision/image input |
+| v3.8 | ✅ Done | GitHub integration (read, ask, council review, commit) |
+| v3.9 | ✅ Done | Telegram, Email, Automation scheduler |
+| v4.0 | ✅ Done | Multi-agent task engine, parallel sub-agents |
+| v4.1 | 🔲 Open | Self-improving, wake word, Flutter app, predictive automation |
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) — adding a new provider or integration takes about 30 lines.
+
+See [INTEGRATIONS.md](INTEGRATIONS.md) for instructions on adding WhatsApp, Discord, Google Calendar, Notion, Spotify, and more.
+
+---
+
+## License
+
+MIT — free forever. See [LICENSE](LICENSE).
+
+Built by **Arshveen Singh** • Delhi, India
