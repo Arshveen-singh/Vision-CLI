@@ -1,97 +1,168 @@
 # Contributing to Vision CLI
 
-First off — thanks for even thinking about contributing. Vision CLI is a solo project built by a 14-year-old developer, and any help is genuinely appreciated.
+First off — thanks for being here. Vision CLI is a solo-built open source project and every contribution matters.
 
 ---
 
-## How to Contribute
+## What we need most
 
-### 🐛 Report a Bug
-1. Open a [GitHub Issue](https://github.com/Arshveen-singh/CLI-project/issues)
-2. Use the title format: `[BUG] Short description`
-3. Include:
-   - What you did
-   - What you expected
-   - What actually happened
-   - Error message (if any)
-   - OS and Python version
+These are the highest-priority open issues. Pick one and go:
 
-### 💡 Suggest a Feature
-1. Open a [GitHub Issue](https://github.com/Arshveen-singh/CLI-project/issues)
-2. Use the title format: `[FEATURE] Short description`
-3. Describe the feature and why it would be useful
+### Features (good first contributions)
+- **Rolling context summarization** — currently trims at 20 messages. Replace with a rolling summary so no context is ever lost
+- **Auto web search in chat** — Vision should auto-search when it doesn't know something, not just via `/search`
+- **Wake word detection** — "Hey Vision" triggers mic input from idle state
+- **Long context support** — proper chunking + summarization for large documents
+- **Flutter mobile app** — companion app for cross-device sync
 
-### 🔧 Submit a Pull Request
-1. Fork the repo
-2. Create a branch: `git checkout -b feature/your-feature-name`
-3. Make your changes
-4. Test it works
-5. Commit: `git commit -m "Add: your feature description"`
-6. Push: `git push origin feature/your-feature-name`
-7. Open a Pull Request
+### Integrations (30–50 lines each)
+- WhatsApp (Twilio API)
+- Discord (discord.py)
+- Google Calendar (google-api-python-client)
+- Google Drive (google-api-python-client)
+- Notion (notion-client)
+- Spotify (spotipy)
+
+See [INTEGRATIONS.md](INTEGRATIONS.md) for exact patterns.
+
+### New providers (10–20 lines each)
+Any OpenAI-compatible provider can be added in ~15 lines. See the pattern below.
 
 ---
 
-## Code Style
+## How to add a new provider
 
-- Python 3.10+
-- Use `rich` for all terminal output — no plain `print()` for UI
-- Keep functions small and focused
-- Add a comment above each function explaining what it does
-- Error handling with `try/except` everywhere — never let the CLI crash
+Most AI providers use the OpenAI-compatible API. Adding one takes 15 lines.
 
----
-
-## Adding New Commands
-
-Commands follow a simple pattern in the main loop:
-
+**Step 1 — Add to `select_provider()`:**
 ```python
-elif user.startswith("/yourcommand "):
-    arg = user[len("/yourcommand "):]
-    # your logic here
-    console.print("[green]Result[/green]")
+("11", "NewProvider", "Description of it"),
 ```
 
-And add it to `show_help()`:
+**Step 2 — Add to `setup_provider()`:**
 ```python
-[green]/yourcommand <arg>[/green]   — What it does
+elif provider == "11":
+    key = os.environ.get("NEWPROVIDER_API_KEY") or input("NewProvider key: ").strip()
+    return OpenAI(base_url="https://api.newprovider.com/v1", api_key=key), "NewProvider"
 ```
 
----
-
-## Adding New AI Providers
-
-Add to the provider dict and `setup_provider()` function:
-
+**Step 3 — Add suggested models:**
 ```python
-YOUR_MODELS = {
-    "1": ("model-id", "Model Name — Description"),
-}
-
-# In setup_provider():
-elif provider == "4":
-    from your_library import YourClient
-    key = os.environ.get("YOUR_API_KEY") or input("API key: ").strip()
-    return YourClient(api_key=key), "YourProvider", YOUR_MODELS
+NEWPROVIDER_SUGGESTED = [
+    ("model-id-1", "Model Name 1 — description"),
+    ("model-id-2", "Model Name 2 — description"),
+]
 ```
 
----
+**Step 4 — Add to `_get_suggested()`:**
+```python
+"NewProvider": (NEWPROVIDER_SUGGESTED, "docs.newprovider.com/models"),
+```
 
-## What We Need Help With
-
-- [ ] Windows testing and bug fixes
-- [ ] Better stock data (more sectors, global markets)
-- [ ] Voice wake word ("Hey Vision")
-- [ ] Textual TUI implementation
-- [ ] Better image generation models
-- [ ] Plugin system for custom commands
-- [ ] Unit tests
+That's it. The model selector, validation, council, and everything else works automatically.
 
 ---
 
-## Contact
+## How to add a new integration
 
-**Arshveen Singh** — [Arshveensingh@proton.me](mailto:Arshveensingh@proton.me)
+An integration is any external service (messaging, calendar, etc.).
 
-Open an issue first before working on anything big — saves everyone time.
+**Pattern — keep it simple:**
+
+```python
+# ── Setup ──
+def newservice_setup():
+    token = os.environ.get("NEWSERVICE_TOKEN") or input("NewService token: ").strip()
+    data["newservice_token"] = token
+    save_data()
+    console.print("[green]✓ NewService configured[/green]")
+
+# ── Send ──
+def newservice_send(message):
+    token = data.get("newservice_token")
+    if not token:
+        console.print("[yellow]Run /newservicesetup first[/yellow]")
+        return False
+    try:
+        # your API call here
+        r = requests.post("https://api.newservice.com/send",
+                          json={"token": token, "message": message}, timeout=10)
+        if r.status_code == 200:
+            console.print("[green]✓ Sent[/green]")
+            return True
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        return False
+```
+
+**Add commands to the main loop:**
+```python
+elif user == "/newservicesetup":  newservice_setup()
+elif user.startswith("/newservice "): newservice_send(user[13:].strip())
+```
+
+**Add to `show_help()`:**
+```python
+[green]/newservicesetup  /newservice <msg>[/green]
+```
+
+**Add to automations** (optional, for scheduled sends):
+```python
+elif action.startswith("/newservice "): newservice_send(action[13:])
+```
+
+See [INTEGRATIONS.md](INTEGRATIONS.md) for specific implementation guides per service.
+
+---
+
+## How to add a new command
+
+Any feature that doesn't need a new integration:
+
+1. Write the function (follow existing style — Rich console output, try/except, `save_data()` if it persists anything)
+2. Add the `elif user.startswith("/yourcommand"):` block in the main loop, grouped with similar commands
+3. Add it to `show_help()` in the right section
+4. Update CHANGELOG.md
+
+---
+
+## Code style
+
+- Use Rich for all terminal output — `console.print()`, `Panel()`, `Table()`, `Markdown()`
+- Wrap API calls in `try/except` — never let an integration crash the main loop
+- Use `save_data()` whenever you modify `memory`, `goals`, `portfolio`, or `automations`
+- Rate limit model calls — use `rate_limit(model)` before every `client.chat.completions.create()`
+- Keep functions focused — one function, one job
+- Comment non-obvious logic inline
+
+---
+
+## Pull request checklist
+
+- [ ] Feature works end-to-end (tested in Colab or local)
+- [ ] No crashes on failure (try/except around all external calls)
+- [ ] Added to `show_help()`
+- [ ] Added to CHANGELOG.md under the right version
+- [ ] No hardcoded API keys (use `os.environ.get()` + `input()` fallback)
+- [ ] Works with existing `save_data()` / `load_data()` pattern if it stores anything
+
+---
+
+## Open issues to claim
+
+| Issue | Difficulty | What's needed |
+|-------|-----------|---------------|
+| Rolling context summarization | Medium | Replace 20-message trim with summarize-then-trim |
+| Auto web search in chat | Medium | Detect when Vision doesn't know → auto `/search` |
+| WhatsApp integration | Easy | Twilio API, 40 lines |
+| Discord integration | Easy | discord.py, 50 lines |
+| Google Calendar | Medium | OAuth2 flow + event creation |
+| Wake word detection | Hard | Background mic thread, hotword model |
+| Flutter mobile app | Hard | Cross-device sync via shared JSON/API |
+| Self-improving engine | Hard | Usage analytics + auto model selection |
+
+---
+
+## Questions?
+
+Open an issue or start a discussion. Contributions of any size are welcome — even fixing a typo or adding a model to the suggestion list counts.
