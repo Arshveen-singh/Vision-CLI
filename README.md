@@ -1,4 +1,5 @@
 # Vision CLI v1.4.4-beta
+(this version might be unstable and might have some bugs so I am very sorry)
 
 **Very Intelligent System I Occasionally Need**
 
