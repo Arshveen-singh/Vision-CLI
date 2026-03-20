@@ -1,9 +1,10 @@
-# Vision CLI v1.4.4-beta
-(this version might be unstable and might have some bugs so I am very sorry)
+# Vision CLI v3.4.5-beta
 
 **Very Intelligent System I Occasionally Need**
 
-A privacy-first, open-source AI terminal agent built by [Arshveen Singh](https://github.com/Arshveen-singh). Run any LLM from your terminal — with multi-model council debates, self-improving engine, GitHub integration, automation scheduling, skills system, and more.
+A privacy-first, open-source AI terminal OS built by [Arshveen Singh](https://github.com/Arshveen-singh).
+17 AI providers. LLM Council. CodeMode. AutoMode. Skills. Automation. Stocks. Advisor.
+Free forever.
 
 ```
 ██╗   ██╗██╗███████╗██╗ ██████╗ ███╗   ██╗     ██████╗██╗     ██╗
@@ -14,26 +15,7 @@ A privacy-first, open-source AI terminal agent built by [Arshveen Singh](https:/
   ╚═══╝  ╚═╝╚══════╝╚═╝ ╚═════╝ ╚═╝  ╚═══╝     ╚═════╝╚══════╝╚═╝
 ```
 
----
-
-## What is Vision CLI?
-
-Vision CLI is a Python terminal AI agent that grows with you. It's not a coding agent — it's a full AI operating system for your terminal.
-
-- **10 AI providers** — Groq, OpenRouter, Ollama, Together, Fireworks, Mistral, Cerebras, NVIDIA NIM, SambaNova, Bytez
-- **LLM Council** — multiple models answer in parallel, Chairman synthesizes the verdict
-- **Debate Mode** — models argue FOR/AGAINST/SKEPTIC/DEVIL'S ADVOCATE on any motion
-- **Skills System** — load/create custom skill files that change Vision's entire behavior instantly
-- **Self-Improving Engine** — tracks usage patterns, suggests automations, optimizes model selection
-- **Personal AI Economy** — tracks your time, productivity, weekly AI reports
-- **Predictive Automation** — learns your habits, acts before you ask
-- **GitHub Integration** — load repos, ask questions, multi-model code review
-- **Smart Memory** — auto-extracts facts across sessions, tagged storage
-- **Automation Scheduler** — `daily:09:00`, `interval:30m`, `open:url`, `shell:cmd`
-- **Real-time streaming** responses
-- **Multi-agent task engine** — parallel sub-agents, coordinator merges results
-- **Advisor Mode** — brutally honest personal advisor, separate from Vision
-- **100% open source, MIT licensed**
+> ⚠️ v3.4.7 — stable beta. Report bugs via Issues.
 
 ---
 
@@ -43,16 +25,13 @@ Vision CLI is a Python terminal AI agent that grows with you. It's not a coding 
 # 1 — Install
 !pip install openai groq rich yfinance duckduckgo-search requests beautifulsoup4 wikipedia PyGithub
 
-# 2 — Set API key
+# 2 — Set API key (Groq is free, no credit card)
 import os
-os.environ["GROQ_API_KEY"] = "gsk_..."           # Groq (free, fastest)
-os.environ["OPENROUTER_API_KEY"] = "sk-or-..."   # OR OpenRouter (any model)
+os.environ["GROQ_API_KEY"] = "gsk_..."
 
 # 3 — Run
-!python vision_cli_v4.py
+!python vision_cli.py
 ```
-
----
 
 ## Quickstart — Local
 
@@ -60,267 +39,248 @@ os.environ["OPENROUTER_API_KEY"] = "sk-or-..."   # OR OpenRouter (any model)
 git clone https://github.com/Arshveen-singh/Vision-CLI
 cd Vision-CLI
 pip install -r requirements.txt
-python vision_cli_v4.py
+python vision_cli.py
 ```
 
 ---
 
-## Providers
+## What makes Vision CLI different
 
-| # | Provider | Free Tier | Speed | Best For |
-|---|----------|-----------|-------|----------|
-| 1 | **Groq** | ✅ Generous | ⚡ Ultra fast | Daily use |
-| 2 | **OpenRouter** | ✅ Some models | 🔥 Varies | Access any model |
-| 3 | **Ollama** | ✅ Fully free | 🖥️ Local | Privacy, offline |
-| 4 | **Together AI** | ✅ Free tier | ⚡ Fast | Open source models |
-| 5 | **Fireworks** | ✅ Free tier | ⚡ Fast | Inference speed |
-| 6 | **Mistral** | ❌ Paid | 🔥 Fast | Official Mistral |
-| 7 | **Cerebras** | ✅ Free tier | ⚡⚡ Groq-speed | LLaMA at extreme speed |
-| 8 | **NVIDIA NIM** | ✅ Free credits | 🔥 Fast | Free 405B Llama |
-| 9 | **SambaNova** | ✅ Free | 🔥 Fast | Free 405B Llama |
-| 10 | **Bytez** | ✅ Free tier | 🔄 Variable | 175k+ HuggingFace models |
+| | Vision CLI | Claude Code | Codex | Gemini CLI |
+|--|-----------|-------------|-------|------------|
+| Providers | **17 (10 free)** | 1 paid | 1 paid | 1 free |
+| LLM Council | ✅ **Unique** | ❌ | ❌ | ❌ |
+| AutoMode | ✅ **Unique** | ❌ | ❌ | ❌ |
+| Skills system | ✅ | ❌ | ❌ | ❌ |
+| Test loop | ✅ | ✅ | ✅ | ✅ |
+| Folder watch | ✅ | ✅ | ❌ | ❌ |
+| Automation OS | ✅ | ❌ | ❌ | ❌ |
+| Stocks/Finance | ✅ | ❌ | ❌ | ❌ |
+| Free to use | ✅ | ❌ | ❌ | 🟡 |
 
 ---
 
-## Features
+## Providers (17)
 
-### ⚖ LLM Council
-```
-/council is learning to code more valuable than a degree in 2026?
+| # | Provider | Free | Best Model |
+|---|----------|------|------------|
+| 1 | **Groq** | ✅ | Kimi K2, Qwen 3 |
+| 2 | **OpenRouter** | ✅ | Kimi K2, DeepSeek R1 |
+| 3 | **Ollama** | ✅ local | Qwen 2.5, DeepSeek R1 |
+| 4 | **Cerebras** | ✅ | LLaMA 3.3 70B |
+| 5 | **SambaNova** | ✅ | LLaMA 405B |
+| 6 | **Together** | ✅ | Qwen 2.5 72B |
+| 7 | **Fireworks** | ✅ | DeepSeek R1 |
+| 8 | **OpenAI** | ❌ | GPT-4o, o1 |
+| 9 | **Anthropic** | ❌ | Claude Sonnet 4.5 |
+| 10 | **Google** | 🟡 | Gemini 2.0 Flash |
+| 11 | **xAI** | ❌ | Grok 3 |
+| 12 | **DeepSeek** | ❌ | R1 ($0.07/1M) |
+| 13 | **Cohere** | ❌ | Command R+ |
+| 14 | **Perplexity** | ❌ | Sonar (web-grounded) |
+| 15 | **Mistral** | ❌ | Codestral |
+| 16 | **NVIDIA** | ✅ credits | LLaMA 405B |
+| 17 | **Bytez** | ✅ | 175k+ HuggingFace |
 
-→ Kimi K2:    deep analytical take
-→ DeepSeek:   reasoning-heavy counter
-→ Gemini:     fast pragmatic answer
-→ LLaMA:      open-source perspective
+---
 
-⚖ Chairman: synthesized verdict with confidence level
-```
-
-### ⚔ Debate Mode
-```
-/debate AI will replace programmers in 5 years
-
-→ Kimi:    FOR    — argues with benchmarks + unit economics
-→ Qwen:    AGAINST — strong counter with MIT study data
-→ GPT:     SKEPTIC — challenges both sides
-→ LLaMA:   DEVIL'S ADVOCATE
-
-⚖ Chairman: judges the debate + gives real answer
-```
-
-### 🧠 Skills System
-
-Load built-in skills or create your own:
+## ⚡ CodeMode — `/codemode`
 
 ```bash
-/skill list                  # see all skills
-/skill load security         # Vision becomes a cybersecurity analyst
-/skill load coding           # production-only code, always error-handled
-/skill load jarvis           # brief, proactive, "sir" energy
-/skill load teacher          # Feynman technique, patient explanations
-/skill create myskill        # create your own
-/skill clear                 # back to default
+/codemode              # enter (model selector + skill injection)
+/cm run <task>         # generate → run → auto-fix → verify ⭐
+/cm test <file>        # pytest → fail → AI fix → rerun ⭐
+/cm multifile <task>   # generate 6 files simultaneously ⭐
+/cm watch [folder]     # auto-review files on save ⭐
+/cm sandbox <task>     # isolated execution
+/cm plan <task>        # architecture before code
+/cm build <task>       # direct code generation
+/cm review <file>      # Critical/High/Medium/Low severity
+/cm swarm <task>       # 5 specialist agents in parallel
+/cmgit log 5           # last 5 commits + AI explanation ⭐
+/cmgit blame <file>    # git blame + AI context ⭐
+/codemode off          # exit
 ```
 
-**Custom skill format** — create `vision_skills/myskill.md`:
+## ⚡ AutoMode — `/automode`
+
+```bash
+/automode                              # enter
+/am workflow check RELIANCE daily 9am # natural language → full automation plan
+/am chain /stock RELIANCE → /telegram price update → shell:echo done
+/am script monitor bitcoin price       # generate standalone script
+/am monitor RELIANCE above 1500        # monitoring + Telegram alerts
+/automode off                          # exit
+```
+
+## ⚖ LLM Council
+
+```bash
+/council is Python dying in the age of AI?
+/debate AI will replace programmers in 5 years
+/council history                    # past verdicts
+/council history compare 1 3        # AI comparison of two sessions
+```
+
+## 🔍 Web Search
+
+```bash
+?bitcoin price today          # instant search (NEW ⭐)
+?how to use FastAPI OAuth2    # search + code example
+/search latest AI news        # full search
+```
+
+## 💾 Sessions
+
+```bash
+/session save "my-project"    # save everything (NEW ⭐)
+/session load 1               # restore model, skills, CM/AM, history
+/session list                 # all saved sessions
+```
+
+## 📁 VISION.md
+
+```bash
+/vision.md    # create project context file
+```
+
+Edit `VISION.md` in your project root. Vision auto-loads it every session:
 
 ```markdown
-# Skill: My Skill Name
-
-## Role
-What Vision becomes when this skill is active.
-Example: "You are a Hinglish-speaking desi tech analyst."
+# Vision Project Context
+## Stack
+Python + FastAPI + PostgreSQL
 
 ## Rules
-- Always do X
-- Never do Y
-- When asked about Z, respond with...
+- Always use type hints
+- Use pytest for tests
 
-## Style
-Tone, format, length preferences.
-Example: "Casual Hinglish, short punchy replies, never formal."
+## Important Files
+src/auth.py, src/models/user.py
+
+## Run Commands
+uvicorn main:app --reload
+pytest tests/
 ```
 
-Then: `/skill load myskill`
-
-### 🔮 Self-Improving Engine
+## 📊 Stocks
 
 ```bash
-/selfimprove     # analyze usage → suggest automations + model optimizations
-/economy         # personal AI dashboard — sessions, time, top commands
-/weeklyreport    # AI-generated weekly productivity report
-/patterns        # show learned predictive patterns
+/stock RELIANCE          # live NSE price, P/E, 52W
+/stock AAPL              # US stocks
+/stocks banking          # full sector (banking/it/pharma/auto/tata/energy)
+/portfolio add TCS 10 3800
+/portfolio view          # live P&L
+/marketnews
 ```
 
-Vision tracks every command silently. After enough usage:
-- Identifies which models work best per task type
-- Suggests automations based on your habits
-- Shows your most productive hours and days
-- Generates actionable weekly reports
-
-### ⚡ Automation Scheduler
+## ⚡ Automation
 
 ```bash
-/automate daily:09:00 | /marketnews | Morning market news
+/automate daily:09:00 | /marketnews | Morning news
 /automate interval:30m | /stock RELIANCE | Portfolio watch
 /automate daily:09:00 | open:https://youtube.com | Morning YouTube
 /automate daily:08:30 | shell:spotify | Morning music
-/automate daily:07:00 | chat:Summarize today's AI news | Telegram briefing
-
-/automations          # list all
-/autodelete 1         # remove #1
+/automations
+/autodelete 1
+/undo
 ```
 
-Trigger formats: `daily:HH:MM` — `interval:Nm` — `interval:Nh`
-Action formats: `/command` — `open:url` — `shell:cmd` — `chat:prompt`
-
-### 📁 GitHub Integration
+## 🧠 Skills
 
 ```bash
-/ghconnect                           # connect GitHub token
-/myrepos                             # list your repos
-/repoload Arshveen-singh/Vision-CLI  # load repo into context
-/repofile src/main.py                # read specific file
-/repoask how does auth work?         # ask about loaded repo
-/reporeview                          # Council reviews codebase
-/commit "feat: add skills"           # stage all → commit → push
+/skill load security     # CVE ratings, OWASP mindset
+/skill load coding       # production code only
+/skill load jarvis       # brief + proactive
+/skill load teacher      # Feynman technique
+/skill create myskill    # custom skill
+/skill marketplace       # community skills
+/skill install wtv       # install from GitHub
 ```
-
-Council + GitHub = multi-model PR review with chairman verdict.
-
-### 📊 Stocks
-
-```bash
-/stock RELIANCE          # live NSE price, P/E, 52W range, sector
-/stock AAPL              # US stocks work too
-/stocks banking          # full sector overview
-/recommend growth stocks for 2026
-/impact Russia-Ukraine war on markets
-/portfolio add TCS 10 3800
-/portfolio view          # live P&L dashboard
-/marketnews              # latest headlines
-```
-
-Indian sectors: `banking` `it` `pharma` `auto` `tata` `energy` `fmcg` `adani` `smallcap`
-
----
 
 ## Full Command Reference
 
 ```
-── AI ──────────────────────────────────
-/model          Switch model
-/provider       Switch provider
-/clear          Clear conversation + session context
-/stream         Toggle streaming
-/refresh        Redraw input box (Colab fix)
+── NEW v3.4.7 ───────────────────────
+?<query>                  instant web search
+/session save/load/list   full state persistence
+/vision.md                project context file
+/cm test <file>           pytest auto-fix loop
+/cm multifile <task>      multi-file generation
+/cm watch [folder]        folder watcher
+/cm sandbox <task>        isolated execution
+/cmgit log [n]            commit history + AI
+/cmgit blame <file>       blame + AI context
 
-── Skills 🧠 ────────────────────────────
-/skill list
-/skill load <name>
-/skill unload <name>
-/skill create <name>
-/skill edit <name>
-/skill reload <name>
-/skill active
-/skill clear
+── CodeMode ⚡ ───────────────────────
+/codemode  /cm  /codemode off
 
-── Self-Improving 🔮 ────────────────────
-/economy
-/weeklyreport
-/selfimprove
-/patterns
+── AutoMode ⚡ ───────────────────────
+/automode  /am  /automode off
+/am workflow  /am chain  /am script
+/am monitor  /am status  /am workflows
+/ammem add/view/forget
 
-── Memory ───────────────────────────────
-/memory add <key> <value> [#tag]
+── AI ───────────────────────────────
+/model  /provider  /clear  /stream
+/refresh  /context
+
+── Skills 🧠 ────────────────────────
+/skill list/load/unload/create
+/skill edit/reload/active/clear
+/skill marketplace  /skill install <n>
+
+── Memory ───────────────────────────
+/memory add <key> <val> [#tag]
 /memory view [#tag]
 /memory forget <key>
 
-── Chats ────────────────────────────────
-/chats save <name>
-/chats list
-/chats load <#>
+── Advisor ──────────────────────────
+/advisor <msg>
+/goal add/list/done
 
-── Music 🎵 ─────────────────────────────
-/play <song>
-/pause  /resume  /stop  /skip
-/queue <song>
-/nowplaying
-/volume <0-100>
-
-── Timer ────────────────────────────────
-/timer <minutes>
-/stopwatch start/stop/lap/check
-
-── Image ────────────────────────────────
-/imagine <prompt>
-/vision <image_path> [question]
-
-── Advisor ──────────────────────────────
-/advisor <message>
-/goal add <goal>
-/goal list
-/goal done <#>
-
-── Council ⚖ ────────────────────────────
+── Council ⚖ ────────────────────────
 /council <query>
 /debate <motion>
 /councilsetup
+/council history/view/compare
 
-── Multi-Agent 🤖 ───────────────────────
-/agent <complex task>
+── Multi-Agent 🤖 ───────────────────
+/agent <task>
 
-── GitHub 📁 ────────────────────────────
-/ghconnect
-/myrepos
-/repoload <user/repo>
-/repofile <path>
-/repoask <question>
-/reporeview
-/commit <message>
+── GitHub 📁 ────────────────────────
+/ghconnect  /myrepos  /reposelect
+/repoload  /repofile  /repoask
+/repoedit  /reporeview  /commit
+/cmgit status  /cmgit diff  /cmcommit
 
-── Integrations 🔗 ──────────────────────
-/telegramsetup
-/telegram <message>
-/telegramread
-/emailsetup
-/email <to> | <subject> | <body>
-
-── Automation ⚡ ─────────────────────────
+── Automation ⚡ ─────────────────────
 /automate <trigger> | <action> | <desc>
-/automations
-/autodelete <#>
+/automations  /autodelete  /undo
 
-── Stocks ───────────────────────────────
-/stock <SYMBOL>
-/stocks <sector>
-/recommend <query>
-/impact <event>
-/portfolio add <SYM> <qty> <price>
-/portfolio view
-/portfolio remove <SYM>
-/marketnews [query]
+── Stocks ───────────────────────────
+/stock  /stocks  /recommend  /impact
+/portfolio  /marketnews
 
-── Code ─────────────────────────────────
-/code <file.py> <what to build>
-/html <file.html> <what to build>
-/doc  <file.md> <what to write>
-/runfile <file>
-/debug <file>
-/git <command>
+── Economy 📊 ───────────────────────
+/economy  /weeklyreport
+/selfimprove  /patterns
 
-── Tools ────────────────────────────────
-/search <query>
-/scrape <url>
-/browse <url>
-/wiki <topic>
-/weather <city>
-/ocr <image>
-/artifact <name>
+── Export ───────────────────────────
+/export [label]
 
-── System ───────────────────────────────
-/help
-/exit  /q  /quit
+── API 🌐 ───────────────────────────
+/api  (or --api flag)
+
+── Tools ────────────────────────────
+/search  /scrape  /browse  /wiki
+/weather  /artifact  /timer  /stopwatch
+
+── Code ─────────────────────────────
+/code  /html  /doc  /runfile  /debug  /git
+
+── System ───────────────────────────
+/help  /exit  /q  /quit
 ```
 
 ---
@@ -329,23 +289,21 @@ Indian sectors: `banking` `it` `pharma` `auto` `tata` `energy` `fmcg` `adani` `s
 
 | Version | Status | Features |
 |---------|--------|----------|
-| v3.5 | ✅ Done | 9 providers |
-| v3.6 | ✅ Done | Smart auto-memory, tagged memory |
-| v3.7 | ✅ Done | Real-time streaming, vision input |
-| v3.8 | ✅ Done | GitHub integration |
-| v3.9 | ✅ Done | Telegram, Email, Automation scheduler |
-| v4.0 | ✅ Done | Multi-agent task engine |
-| v4.1 | ✅ Done | Self-improving engine, economy, predictive automation |
-| v4.2 | ✅ Done | Skills system, refresh hotkey, identity fix, advisor context fix |
-| v4.3 | ✅ Done | Rolling context summarization, auto web search in chat |
-| v4.4 | 🔲 Open | Wake word detection, always-on mode |
-| v4.5 | 🔲 Open | Flutter mobile companion app |
+| v3.0–v3.9 | ✅ | Core rewrite → GitHub → Automation → Streaming |
+| v1.4.4-beta | ✅ | CodeMode, AutoMode, Skills, Council History |
+| v3.4.7 | ✅ | 17 providers, test loop, folder watch, sessions, VISION.md |
+| v4.0.0 | 🔲 | pip install, local filesystem awareness |
+| v4.1.0 | 🔲 | VS Code extension, IDE integration |
+| v4.2.0 | 🔲 | Flutter mobile app |
+| v5.0.0 | 🔲 | v2 architecture, proper test suite |
 
 ---
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) — adding a provider is 15 lines, adding an integration is 30.
+See [CONTRIBUTING.md](CONTRIBUTING.md) — adding a provider is 15 lines.
+See [INTEGRATIONS.md](Integrations.md) — WhatsApp, Discord, Calendar, Notion, Spotify.
+See [Skills-guide.md](Skills-guide.md) — create and share custom skills.
 
 ---
 
@@ -354,3 +312,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) — adding a provider is 15 lines, adding
 MIT — free forever.
 
 Built by **Arshveen Singh** • Delhi, India
+Contact: Arshveensingh@proton.me
